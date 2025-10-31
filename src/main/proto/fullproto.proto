@@ -1,0 +1,45 @@
+syntax = "proto3";
+
+package com.example.grpc; // Имя сервиса/метода плюс имя пакета даёт полное имя.
+
+option java_multiple_files = true;
+option java_package = "ru.annikonenkov.myconversation";
+option java_outer_classname = "ExampleProto"; // В классе с этим именем будет описание данного .proto файла.
+
+// Сообщения
+message Request {
+  string message = 1;
+  int32 id = 2;
+}
+
+message Response {
+  string result = 1;
+  int32 processed_id = 2;
+}
+
+message StreamRequest {
+  string data = 1;
+}
+
+message StreamResponse {
+  string processed_data = 1;
+  int64 timestamp = 2;
+}
+
+// Сервис с разными типами методов
+service ExampleService {
+  // Унарный синхронный метод (один запрос - один ответ)
+  rpc UnarySync(Request) returns (Response) {};
+
+  // Унарный асинхронный метод
+  rpc UnaryAsync(Request) returns (Response) {};
+
+  // Серверный стриминг (один запрос - много ответов)
+  rpc ServerStreaming(Request) returns (stream StreamResponse) {};
+
+  // Клиентский стриминг (много запросов - один ответ)
+  rpc ClientStreaming(stream StreamRequest) returns (Response) {};
+
+  // Двунаправленный стриминг (много запросов - много ответов)
+  rpc BidirectionalStreaming(stream StreamRequest) returns (stream StreamResponse) {};
+}
