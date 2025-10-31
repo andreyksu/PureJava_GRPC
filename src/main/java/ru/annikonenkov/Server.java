@@ -19,7 +19,10 @@ import java.util.concurrent.TimeUnit;
 public class Server {
     public static void main(String[] args) throws IOException, InterruptedException {
         // Создаём сервер и добавляем два сервиса.
-        io.grpc.Server server = ServerBuilder.forPort(50051).addService(new AuthServiceImpl()).addService(new GreeterServiceImpl()).build().start();
+        io.grpc.Server server = ServerBuilder.forPort(50051)
+                .addService(new AuthServiceImpl())
+                .addService(new GreeterServiceImpl())
+                .build().start();
 
         System.out.println("First"); // Выполнилось мгновенно.
         Runtime.getRuntime().addShutdownHook(new Thread(()->{ // 1 - регистрируем процесс остановки сервера. При остановке текущего потока вызовется этот код.
@@ -39,12 +42,12 @@ public class Server {
 
     }
     // MyAuthServImplBase - это есть реализация нашего сервиса. Для каждого сервиса генерируется XXXGrpc и внутренний XXXImplBase
-    // ImplBase наследует AsyncService - где присутствует дефолтная реализация методов сервиса, которые мы должны переопределить/реализовать.
-    // ImplBase наследует BindableService - который позволяет привязать(регистрировать) сервисы к серверу см. addService. Т.е. есть сервер (netty) и к нему мы привязываем сервисы.
+    // ImplBase наследует AsyncService - где присутствует дефолтная реализация методов сервиса (вызывают Exception), которые мы должны переопределить/реализовать.
+    // ImplBase наследует BindableService - который позволяет привязать(регистрировать) сервисы к серверу см. addService. Т.е. сервер (netty) и к нему мы привязываем сервисы. Т.е. внутри ...GRPC.java вызывается OurServiceGrpc.bindService(this) где this и есть нашь сервис. Именно в bindSerivce и происходит связка MethodDescriptor и ServerCallHandler.
     static class AuthServiceImpl extends MyAuthServGrpc.MyAuthServImplBase {// Сервис называется - MyAuthServ. А Grpc и ImplBase - добавляются компилятором Proto.
         @Override // Переопределяем на стороне сервера целевые методы, которые будут вызваны клиентом. У клиента создаются стабы на эти методы.
         public void myLogin(MyLoginRequest req, StreamObserver<MyLoginResponse> responseObserver) {// Это метод объявлен в .proto. Но получение и отправка оба как аргументы.
-            new SomeLogic().getTimeStamp(responseObserver);//Выполняем целевую серверную логику.
+            new SomeLogic().getTimeStamp(responseObserver);//Выполняем целевую серверную логику. SomeLogic - просто класс на сервере.
             responseObserver.onNext(MyLoginResponse.newBuilder().setMytoken("sample-token").setMysuccess(true).build());//Это название полей сообщения LoginResponse но с добавлением set.// Для вызова нескольких onNext поле должно быть в proto c пометкой stream.
             responseObserver.onCompleted(); //Finally, we’ll need to call onCompleted() to specify that we’ve finished dealing with the RPC; otherwise, the connection will be hung, and the client will just wait for more information to come in.
         }
