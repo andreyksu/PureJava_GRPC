@@ -1,0 +1,152 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>ru.annikonenkov</groupId>
+    <artifactId>GRPc</artifactId>
+    <version>1.0-SNAPSHOT</version>
+    <packaging>jar</packaging>
+
+    <name>GRPc</name>
+    <url>http://maven.apache.org</url>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
+        <grpc.version>1.58.0</grpc.version>
+        <protobuf.version>4.26.0</protobuf.version>
+        <protobuf.plugin.version>0.6.1</protobuf.plugin.version>
+        <os-maven-plugin.version>1.7.0</os-maven-plugin.version>
+        <!--<os.detected.classifier>linux-x86_64</os.detected.classifier>-->
+        <os.detected.classifier>windows-x86_64</os.detected.classifier>
+    </properties>
+
+    <dependencies>
+
+        <!-- For @Generated annotation in Java 9+ -->
+        <dependency>
+            <groupId>javax.annotation</groupId>
+            <artifactId>javax.annotation-api</artifactId>
+            <version>1.3.2</version>
+        </dependency>
+
+        <!-- gRPC dependencies -->
+        <dependency>
+            <groupId>io.grpc</groupId> <!--Netty-based transport for gRPC.-->
+            <artifactId>grpc-netty-shaded
+            </artifactId> <!--<artifactId>grpc-netty</artifactId>--> <!-- grpc-netty-shaded перепакованная расширенная версия с зависимостями для grpc-netty -->
+            <version>${grpc.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.grpc</groupId> <!--Protobuf support for gRPC.-->
+            <artifactId>grpc-protobuf</artifactId>
+            <version>${grpc.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.grpc</groupId> <!--Client stubs for gRPC.-->
+            <artifactId>grpc-stub</artifactId>
+            <version>${grpc.version}</version>
+        </dependency>
+
+        <!-- Protobuf Java -->
+        <dependency> <!--Protobuf runtime for Java.-->
+            <groupId>com.google.protobuf</groupId>
+            <artifactId>protobuf-java</artifactId>
+            <version>${protobuf.version}</version>
+        </dependency>
+
+        <!-- Optional: For testing -->
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.13.2</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <extensions>
+            <!-- Needed for protoc to detect OS -->
+            <extension>
+                <groupId>kr.motd.maven</groupId>
+                <artifactId>os-maven-plugin
+                </artifactId> <!--Helps protoc detect the OS (needed for correct binary selection).-->
+                <version>${os-maven-plugin.version}</version>
+            </extension>
+        </extensions>
+
+        <plugins>
+            <!-- Protobuf Compiler (Generates Java classes from .proto files) -->
+            <plugin>
+                <groupId>org.xolstice.maven.plugins</groupId>
+                <artifactId>protobuf-maven-plugin
+                </artifactId> <!--Compiles .proto files into Java classes. Generates both Protobuf messages and gRPC services.-->
+                <version>${protobuf.plugin.version}</version>
+                <configuration>
+                    <protoSourceRoot>${project.basedir}/src/main/proto
+                    </protoSourceRoot><!--Дир, где будет находиться proto файл-->
+                    <!-- For regular protobuf messages. Здесь лежат сами сообщения -->
+                    <!-- Я так понял, если указать этот путь, но не указать для сервиса, то не компилируется? Короче можно не указывать и будет дефолтное значение. -->
+                    <outputDirectory>${basedir}/target/generated-sources/protobuf/java-grpc</outputDirectory>
+                    <protocArtifact>com.google.protobuf:protoc:${protobuf.version}:exe:${os.detected.classifier}</protocArtifact>
+                    <pluginId>grpc-java</pluginId>
+                    <pluginArtifact>io.grpc:protoc-gen-grpc-java:${grpc.version}:exe:${os.detected.classifier}</pluginArtifact>
+                    <clearOutputDirectory>true</clearOutputDirectory>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>compile-protoc</id>
+                        <goals>
+                            <goal>compile</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>compile-grpc</id>
+                        <goals>
+                            <goal>compile-custom</goal>
+                        </goals>
+                        <configuration>
+                            <!-- For gRPC services only Здесь лежат сервисы. Можно не указывать и будет дефолтное значение.  -->
+                            <outputDirectory>${project.build.directory}/generated-sources/protobuf/grpc-java</outputDirectory>
+                            <pluginId>grpc-java</pluginId>
+                        </configuration>
+                    </execution>
+                </executions>
+<!--
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>compile</goal> <It is comment Generates Protobuf messages>
+                            <goal>compile-custom</goal> <It is comment Generates gRPC services>
+                        </goals>
+                    </execution>
+                </executions>
+-->
+            </plugin>
+
+            <!-- Maven Compiler Plugin -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.11.0</version>
+                <configuration>
+                    <source>${maven.compiler.source}</source>
+                    <target>${maven.compiler.target}</target>
+                </configuration>
+            </plugin>
+
+            <!-- Exec Maven Plugin (For running the server/client) -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.1.0</version>
+                <!--
+                <configuration>
+                    <mainClass>com.example.grpc.HelloServer</mainClass>
+                </configuration>
+                -->
+            </plugin>
+        </plugins>
+    </build>
+</project>

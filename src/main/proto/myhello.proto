@@ -1,0 +1,29 @@
+syntax = "proto3";
+// Это декларация области видимости (namespace) на уровне самого protobuf-файла.
+// Создаёт уникальное пространство имён для сообщений, сервисов, enum и т.д. внутри схемы protobuf
+// В Java/Kotlin — становится Java package, если НЕ указан java_package.
+package myconversation; // Т.е. если в различных proto будут одинаковые методы или сообщения. Позволит убрать конфликт имён.
+
+import "google/protobuf/empty.proto";
+
+
+option java_multiple_files = true;
+option java_package = "ru.annikonenkov.myconversation";
+option java_outer_classname = "MyGreeterProto";
+
+// !!!! Import the auth service
+import "myauth.proto";
+
+// Для потоковой передачи, нескольких вызовов onNext нужно указать stream перед передаваемым/возвращаемым аргументом.
+service MyGreeterServ {
+  rpc MySayHello (MyHelloRequest) returns (MyHelloResponse);
+}
+
+message MyHelloRequest {
+  string myname = 1;
+  myauth.MyLoginResponse myauth = 2;  // Импортированное сообщение из др. proto
+}
+
+message MyHelloResponse {
+  string mymessage = 1;
+}

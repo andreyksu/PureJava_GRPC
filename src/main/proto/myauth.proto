@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package myauth;
+
+import "google/protobuf/empty.proto";
+
+option java_multiple_files = true;
+option java_package = "ru.annikonenkov.myauth";
+option java_outer_classname = "MyAuthProto";
+
+service MyAuthServ {
+  rpc MyLogin (MyLoginRequest) returns (MyLoginResponse);
+  rpc MySomeMeth (google.protobuf.Empty) returns (google.protobuf.Empty);
+}
+
+message MyLoginRequest {
+  string myusername = 1;
+  string mypassword = 2;
+}
+
+message MyLoginResponse {
+  string mytoken = 1;
+  bool mysuccess = 2;
+}
